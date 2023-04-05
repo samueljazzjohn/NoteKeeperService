@@ -6,12 +6,25 @@ var logger = require('morgan');
 var cors=require('cors')
 var connectDB=require('./config/dbconnection')
 const bodyParser = require('body-parser');
+const schema = require('./server/schema/schema')
+const {graphqlHTTP} = require('express-graphql')
 
 connectDB
 
 var indexRouter = require('./routes/index');
 
 var app = express();
+
+app.use('/graphql', graphqlHTTP({
+    schema,
+    // rootValue: root,
+    graphiql: true,
+}));
+
+const port = 4000;
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});
 
 app.use(cors())
 app.use(logger('dev'));
