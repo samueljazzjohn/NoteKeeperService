@@ -2,8 +2,8 @@ const mongoose = require('mongoose')
 
 const NoteSchema = new mongoose.Schema({
     title : {type:String,required:true,unique:true},
-    note : {type:String,required:true},
-    user: [{ type: Schema.Types.ObjectId, ref: 'UserModel' }]
+    userId: { type: mongoose.Types.ObjectId, ref: 'UserModel' },
+    description : {type:String,required:true},
 },{collection:'Notes'}
 );  
 
