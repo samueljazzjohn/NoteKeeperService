@@ -12,6 +12,8 @@ connectDB
 
 var app = express();
 
+app.use(cors())
+
 app.use('/graphql', graphqlHTTP({
     schema,
     // rootValue: root,
@@ -23,7 +25,6 @@ app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
 
-app.use(cors())
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
