@@ -67,9 +67,9 @@ const mutation = new GraphQLObjectType({
     fields:{
         login:{
             type:AuthType,
-            args:{username:{type:GraphQLNonNull(GraphQLString)},password:{type:GraphQLNonNull(GraphQLString)}},
-            resolve(parent,args){
-                const user = userModel.findOne({username:args.username})
+            args:{email:{type:GraphQLNonNull(GraphQLString)},password:{type:GraphQLNonNull(GraphQLString)}},
+            async resolve(parent,args){
+                const user =await userModel.findOne({email:args.email})
                 if(!user){
                     throw new Error('User does not exist')
                 }
