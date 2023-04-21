@@ -1,6 +1,16 @@
 const {GraphQLObjectType,GraphQLID,GraphQLString, GraphQLSchema,GraphQLNonNull, GraphQLList} = require('graphql')
 const noteModel = require('../../models/noteModel')
 const userModel = require('../../models/userModel')
+const jwt = require('jsonwebtoken')
+
+// Auth Type
+const AuthType = new GraphQLObjectType({
+    name: 'Auth',
+    fields: {
+      token: { type: GraphQLString },
+    },
+});
+
 
 // User Type
 const UserType = new GraphQLObjectType({
@@ -55,6 +65,21 @@ const RootQuery = new GraphQLObjectType({
 const mutation = new GraphQLObjectType({
     name:'mutation',
     fields:{
+        login:{
+            type:AuthType,
+            args:{username:{type:GraphQLNonNull(GraphQLString)},password:{type:GraphQLNonNull(GraphQLString)}},
+            resolve(parent,args){
+                const user = userModel.findOne({username:args.username})
+                if(!user){
+                    throw new Error('User does not exist')
+                }
+                if(args.password !== user.password){
+                    throw new Error('Password is incorrect')
+                }
+                const token = jwt.sign({id:user._id},process.env.JWT_SECRET)
+                return {token}
+            }
+        },
         addUser:{
             type:UserType,
             args : {
