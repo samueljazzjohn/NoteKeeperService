@@ -2,11 +2,11 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var cors=require('cors')
-var connectDB=require('./config/dbconnection')
+var cors = require('cors')
+var connectDB = require('./config/dbconnection')
 const bodyParser = require('body-parser');
 const schema = require('./server/schema/schema')
-const {graphqlHTTP} = require('express-graphql')
+const { graphqlHTTP } = require('express-graphql')
 
 connectDB
 
@@ -15,9 +15,24 @@ var app = express();
 app.use(cors())
 
 app.use('/graphql', graphqlHTTP({
-    schema,
-    // rootValue: root,
-    graphiql: true,
+  schema,
+  // rootValue: root,
+  context: ({ req }) => ({ req }),
+  plugins: [
+    {
+      requestDidStart() {
+        return {
+          didResolveOperation({ request, document }) {
+            const operationName = request.operationName;
+            if (operationName === 'Notes'||operationName === 'addNote') {
+              getUserId(request.context);
+            }
+          },
+        };
+      },
+    },
+  ],
+  graphiql: true,
 }));
 
 const port = 4000;

@@ -1,7 +1,8 @@
 const {GraphQLObjectType,GraphQLID,GraphQLString, GraphQLSchema,GraphQLNonNull, GraphQLList} = require('graphql')
 const noteModel = require('../../models/noteModel')
 const userModel = require('../../models/userModel')
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
+const { authenticateToken } = require('../../middleware/authorization');
 
 // Auth Type
 const AuthType = new GraphQLObjectType({
@@ -55,7 +56,8 @@ const RootQuery = new GraphQLObjectType({
         Notes:{
             type:new GraphQLList(NoteType),
             args:{id:{type:GraphQLID}},
-            resolve(parent,args){
+            resolve(parent,args,context){
+                const userId=authenticateToken(context)
                 return noteModel.find({userId:args.id})
             }
         }
@@ -105,15 +107,17 @@ const mutation = new GraphQLObjectType({
                 })
             }),
             args: {
-                userId: { type: GraphQLNonNull(GraphQLID) },
+                // userId: { type: GraphQLNonNull(GraphQLID) },
                 title: { type: GraphQLNonNull(GraphQLString) },
                 description: { type: GraphQLNonNull(GraphQLString) },
             },
-            async resolve(parent, args) {
+            async resolve(parent, args,context) {
+                console.log()
+                const userId = authenticateToken(context)
                 const note = new noteModel({
                     title: args.title,
                     description: args.description,
-                    userId: args.userId
+                    userId: userId
                 })
                 const savedNote = await note.save()
 
