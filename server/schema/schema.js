@@ -135,6 +135,16 @@ const mutation = new GraphQLObjectType({
                 }
             }
         },
+        updateNote:{
+            type:NoteType,
+            args:{ 'id':{type:GraphQLNonNull(GraphQLID)},'title':{type:GraphQLNonNull(GraphQLString)},'description':{type:GraphQLNonNull(GraphQLString)}},
+            resolve(parent,args,context){
+                if(context.user==null){
+                    throw new Error('User not authenticated')
+                }
+                return noteModel.findByIdAndUpdate(args.id,{$set:{title:args.title,description:args.description}})
+            }
+        },
         deleteNote:{
             type:NoteType,
             args:{id:{type:GraphQLID}},
