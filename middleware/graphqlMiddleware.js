@@ -7,8 +7,8 @@ const graphqlMiddleware = graphqlHTTP(async (request, response, graphQLParams) =
     const context = {
       user: null
     };
-    if (request.headers) {
-    const token = request.headers && request.headers.authorization.split(' ')[1];
+    if (request.headers.authorization) {
+    const token = request.headers.authorization.split(' ')[1];
       try {
         const decodedToken = await jwt.verify(token, JWT_SECRET);
         context.user = decodedToken.userId;
