@@ -3,6 +3,7 @@ const noteModel = require('../../models/noteModel')
 const userModel = require('../../models/userModel')
 const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('../../middleware/authorization');
+const JWT_SECRET  = require('../../config/appconfig').auth.jwt_secret
 
 // Auth Type
 const AuthType = new GraphQLObjectType({
@@ -57,8 +58,8 @@ const RootQuery = new GraphQLObjectType({
             type:new GraphQLList(NoteType),
             args:{id:{type:GraphQLID}},
             resolve(parent,args,context){
-                const userId=authenticateToken(context)
-                return noteModel.find({userId:args.id})
+                const userId = context.user;
+                return noteModel.find({userId}) 
             }
         }
     }
@@ -78,7 +79,7 @@ const mutation = new GraphQLObjectType({
                 if(args.password !== user.password){
                     throw new Error('Password is incorrect')
                 }
-                const token = jwt.sign({id:user._id},process.env.JWT_SECRET)
+                const token = jwt.sign({userId:user._id},JWT_SECRET)
                 return {token}
             }
         },
@@ -112,8 +113,8 @@ const mutation = new GraphQLObjectType({
                 description: { type: GraphQLNonNull(GraphQLString) },
             },
             async resolve(parent, args,context) {
-                console.log()
-                const userId = authenticateToken(context)
+                console.log("inside addNote",context.user)
+                const userId = context.user
                 const note = new noteModel({
                     title: args.title,
                     description: args.description,
@@ -121,7 +122,7 @@ const mutation = new GraphQLObjectType({
                 })
                 const savedNote = await note.save()
 
-                const user = await userModel.findById(args.userId)
+                const user = await userModel.findById(userId)
                 user.notes.push(savedNote._id)
                 await user.save()
 
