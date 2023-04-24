@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 function authenticateToken(context) {
+  console.log(context)
   console.log(context.req.headers)
   const Authorization = context.req.headers.authorization;
   console.log(Authorization)
