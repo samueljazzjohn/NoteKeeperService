@@ -59,6 +59,9 @@ const RootQuery = new GraphQLObjectType({
             args:{id:{type:GraphQLID}},
             resolve(parent,args,context){
                 const userId = context.user;
+                if(userId==null){
+                    throw new Error('User not authenticated')
+                }
                 return noteModel.find({userId}) 
             }
         }
@@ -131,7 +134,17 @@ const mutation = new GraphQLObjectType({
                     note: savedNote
                 }
             }
-        }
+        },
+        deleteNote:{
+            type:NoteType,
+            args:{id:{type:GraphQLID}},
+            resolve(parent,args,context){
+                if(context.user==null){
+                    throw new Error('User not authenticated')
+                }
+                return noteModel.findByIdAndDelete(args.id)
+            }
+        }   
     }
 })
 
