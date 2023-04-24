@@ -7,6 +7,8 @@ var connectDB = require('./config/dbconnection')
 const bodyParser = require('body-parser');
 const schema = require('./server/schema/schema')
 const { graphqlHTTP } = require('express-graphql')
+const { authenticateToken } = require('./middleware/authorization');
+const {graphqlMiddleware} = require('./middleware/graphqlMiddleware')
 
 connectDB
 
@@ -14,26 +16,18 @@ var app = express();
 
 app.use(cors())
 
-app.use('/graphql', graphqlHTTP({
-  schema,
-  // rootValue: root,
-  context: ({ req }) => ({ req }),
-  plugins: [
-    {
-      requestDidStart() {
-        return {
-          didResolveOperation({ request, document }) {
-            const operationName = request.operationName;
-            if (operationName === 'Notes'||operationName === 'addNote') {
-              getUserId(request.context);
-            }
-          },
-        };
-      },
-    },
-  ],
-  graphiql: true,
-}));
+app.use('/graphql', graphqlMiddleware);
+
+
+// app.use('/graphql', graphqlHTTP((req)=>({
+//   schema,
+//   // rootValue: root,
+//   context: {
+//     req,
+//     user: authenticateToken(req.headers.authorization)
+//   },
+//   graphiql: true,
+// })));
 
 const port = 4000;
 app.listen(port, () => {
