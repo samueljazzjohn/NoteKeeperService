@@ -73,6 +73,26 @@ const mutation = new GraphQLObjectType({
                 return {token}
             }
         },
+        loginFacebook:{
+            type:AuthType,
+            args:{email:{type:GraphQLNonNull(GraphQLString)},username:{type:GraphQLNonNull(GraphQLString)}},
+            async resolve(parent,args){
+                console.log("inside facebook login",args)
+                const user = await userModel.findOne({email:args.email})
+                if(!user){
+                    const newUser = new userModel({
+                        username:args.username,
+                        email:args.email,
+                        password:""
+                    })
+                    const savedUser = await newUser.save()
+                    const token = jwt.sign({userId:savedUser._id},JWT_SECRET)
+                    return {token}
+                }
+                const token = jwt.sign({userId:user._id},JWT_SECRET)
+                return {token}
+            } 
+        },
         addUser:{
             type:UserType,
             args : {
