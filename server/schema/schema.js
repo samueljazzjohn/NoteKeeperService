@@ -188,7 +188,7 @@ const mutation = new GraphQLObjectType({
                     userId,
                     $or: [
                         { title: { $regex: searchRegex } },
-                        { content: { $regex: searchRegex } }
+                        { description: { $regex: searchRegex } }
                     ]
                 };
 
