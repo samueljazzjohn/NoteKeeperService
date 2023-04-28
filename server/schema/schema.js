@@ -4,44 +4,11 @@ const userModel = require('../../models/userModel')
 const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('../../middleware/authorization');
 const JWT_SECRET  = require('../../config/appconfig').auth.jwt_secret
-
-// Auth Type
-const AuthType = new GraphQLObjectType({
-    name: 'Auth',
-    fields: {
-      token: { type: GraphQLString },
-    },
-});
-
-
-// User Type
-const UserType = new GraphQLObjectType({
-    name:'User',
-    fields : ()=>({
-        id:{type:GraphQLID},
-        username:{type:GraphQLString},
-        email:{type:GraphQLString},
-        password:{type:GraphQLString},
-        notes:{
-            type:GraphQLList(NoteType),
-            resolve(parent,args){
-                return noteModel.find((notes)=>notes.id===parent.id)
-            }
-
-        }
-    })
-})
-
-// Note Type
-const NoteType = new GraphQLObjectType({
-    name:'Note',
-    fields:()=>({
-        id:{type:GraphQLID},
-        title:{type:GraphQLString},
-        description:{type:GraphQLString}
-    })
-})
-
+const UserType = require('../queries/getUser')
+const NoteType = require('../queries/getNote')
+const AuthType = require('../queries/getAuth');
+const getUser = require('../resolvers/getUser');
+const getNote = require('../resolvers/getNote');
 
 
 const RootQuery = new GraphQLObjectType({
@@ -51,7 +18,7 @@ const RootQuery = new GraphQLObjectType({
             type:new GraphQLList(UserType),
             args:{id:{type:GraphQLID},email:{type:GraphQLString}},
             resolve(parent,args){
-                return userModel.find({})
+                getUser()
             }
         },
         Notes:{
@@ -81,6 +48,26 @@ const mutation = new GraphQLObjectType({
                 }
                 if(args.password !== user.password){
                     throw new Error('Password is incorrect')
+                }
+                const token = jwt.sign({userId:user._id},JWT_SECRET)
+                return {token}
+            }
+        },
+        loginGoogle:{
+            type:AuthType,
+            args:{email:{type:GraphQLNonNull(GraphQLString)},username:{type:GraphQLNonNull(GraphQLString)}},
+            async resolve(parent,args){
+                console.log("inside google login",args)
+                const user = await userModel.findOne({email:args.email})
+                if(!user){
+                    const newUser = new userModel({
+                        username:args.username,
+                        email:args.email,
+                        password:""
+                    })
+                    const savedUser = await newUser.save()
+                    const token = jwt.sign({userId:savedUser._id},JWT_SECRET)
+                    return {token}
                 }
                 const token = jwt.sign({userId:user._id},JWT_SECRET)
                 return {token}
@@ -116,7 +103,6 @@ const mutation = new GraphQLObjectType({
                 description: { type: GraphQLNonNull(GraphQLString) },
             },
             async resolve(parent, args,context) {
-                console.log("inside addNote",context.user)
                 const userId = context.user
                 const note = new noteModel({
                     title: args.title,
