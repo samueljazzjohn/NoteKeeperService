@@ -10,6 +10,13 @@ module.exports = {
 	},
     db:{
         uri : process.env.MONGODB_URI,
+    },
+    email:{
+        username : process.env.EMAIL_USERNAME,
+        password : process.env.EMAIL_PASSWORD,
+    },
+    client:{
+        url : process.env.CLIENT_URL,
     }
 
 };
