@@ -1,4 +1,4 @@
-const { GraphQLObjectType, GraphQLID, GraphQLString, GraphQLSchema, GraphQLNonNull, GraphQLList } = require('graphql')
+const { GraphQLObjectType, GraphQLID, GraphQLString, GraphQLSchema, GraphQLNonNull, GraphQLList, GraphQLBoolean } = require('graphql')
 const noteModel = require('../../models/noteModel')
 const userModel = require('../../models/userModel')
 const jwt = require('jsonwebtoken');
@@ -9,6 +9,35 @@ const NoteType = require('../queries/getNote')
 const AuthType = require('../queries/getAuth');
 const getUser = require('../resolvers/getUser');
 const getNote = require('../resolvers/getNote');
+const crypto = require('crypto');
+const nodeMailer = require('nodemailer');
+const Email= require('../../config/appconfig').email.username
+const Password= require('../../config/appconfig').email.password
+const ClientUrl= require('../../config/appconfig').client.url
+
+const sendPasswordResetEmail = async (email, resetToken) => {
+    // Send password reset email
+    const transporter = nodeMailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: Email,
+            pass: Password
+        }
+    });
+
+    const mailOptions = {
+        from: Email,
+        to: email,
+        subject: 'Password Reset',
+        text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n`
+            + `Please click on the following link, or paste this into your browser to complete the process:\n\n`
+            + `${ClientUrl}/${resetToken}\n\n`
+            + `If you did not request this, please ignore this email and your password will remain unchanged.\n`
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent: ' + info.response);
+};
 
 
 const RootQuery = new GraphQLObjectType({
@@ -112,6 +141,58 @@ const mutation = new GraphQLObjectType({
                 }
                 const token = jwt.sign({ userId: user._id }, JWT_SECRET)
                 return { user, token }
+            }
+        },
+        forgetPassword: {
+            type: new GraphQLObjectType({
+                name: 'forgetPasswordResult',
+                fields: () => ({
+                    status: { type: GraphQLBoolean },
+                })
+            }),
+            args: { email: { type: GraphQLNonNull(GraphQLString) } },
+            async resolve(parent, args) {
+                try {
+                    const user = await userModel.findOne({ email: args.email })
+                    if (!user) {
+                        throw new Error('User does not exist')
+                    }
+                    const resetToken = crypto.randomBytes(20).toString('hex');
+                    user.resetPasswordToken = resetToken;
+                    user.resetPasswordExpires = Date.now() + 3600000;
+                    await user.save();
+
+                    await sendPasswordResetEmail(user.email, resetToken);
+
+                    return {status:true};
+
+                } catch (error) {
+                    console.log(error.message);
+                    throw new Error('Error resetting password');
+                }
+            }
+        },
+        resetPassword:{
+            type: new GraphQLObjectType({
+                name: 'ResetPasswordResult',
+                fields: () => ({
+                    status: { type: GraphQLBoolean },
+                })
+            }), 
+            args: { token: { type: GraphQLNonNull(GraphQLString) }, password: { type: GraphQLNonNull(GraphQLString) } },
+            async resolve(parent,args){
+                const user =await userModel.findOne({resetPasswordToken:args.token});
+                if(!user){
+                    throw new Error('Password reset token is invalid or has expired');
+                }
+                if(Date.now() > user.resetPasswordExpires){
+                    throw new Error('Password reset token is invalid or has expired');
+                }
+                user.password = args.password;
+                user.resetPasswordToken = undefined;
+                user.resetPasswordExpires = undefined;
+                await user.save();
+                return {status:true};
             }
         },
         addUser: {
