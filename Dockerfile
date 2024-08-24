@@ -23,7 +23,7 @@ COPY . .
 
 
 # Expose a port (if your application listens on a specific port)
-EXPOSE 4000
+EXPOSE 80
 
 
 # Define the command to start your application using nodemon
