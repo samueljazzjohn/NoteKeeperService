@@ -7,27 +7,32 @@ var connectDB = require('./config/dbconnection')
 const bodyParser = require('body-parser');
 const schema = require('./server/schema/schema')
 const { graphqlHTTP } = require('express-graphql')
-const { authenticateToken } = require('./middleware/authorization');
 const {graphqlMiddleware} = require('./middleware/graphqlMiddleware')
+const indexRouter = require('./router/index.js');
+const oathRouter = require( './router/oauth.js');
+const swaggerSpec = require('./config/swaggerConfig.js');
+const swaggerUi = require('swagger-ui-express');
 
 connectDB
 
 var app = express();
 
 app.use(cors())
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+
+// Swagger Ui configuration
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 
 app.use('/graphql', graphqlMiddleware);
+app.use('/v1', indexRouter);
+app.use('/v1/auth', oathRouter);
 
-
-// app.use('/graphql', graphqlHTTP((req)=>({
-//   schema,
-//   // rootValue: root,
-//   context: {
-//     req,
-//     user: authenticateToken(req.headers.authorization)
-//   },
-//   graphiql: true,
-// })));
 
 const port = 4000;
 app.listen(port, () => {
